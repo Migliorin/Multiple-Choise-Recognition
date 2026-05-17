@@ -1,0 +1,15 @@
+[project]
+name = "multiple-choise-recognition"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "black>=26.5.0",
+    "isort>=8.0.1",
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.5",
+    "opencv-python>=4.13.0.92",
+    "pandas>=3.0.3",
+    "supervision>=0.28.0",
+]
