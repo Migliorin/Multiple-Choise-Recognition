@@ -10,8 +10,10 @@ class Tamaulipas:
         height_crop=0.175,
         min_radius=25,
         max_radius=27,
-        hough_param2=15,
+        hough_param2=12,
         max_fill_ratio=0.1,
+        kernel_blur=21,
+        hough_min_dist=22
     ):
         self.height_crop = height_crop
 
@@ -19,8 +21,11 @@ class Tamaulipas:
         self.max_radius = max_radius
 
         self.hough_param2 = hough_param2
+        self.hough_min_dist = hough_min_dist
 
         self.max_fill_ratio = max_fill_ratio
+
+        self.kernel_blur = kernel_blur
 
     def __open_image(self, image_path: str):
         img = cv2.imread(image_path)
@@ -33,14 +38,14 @@ class Tamaulipas:
     def __convert_image(self, img):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        return cv2.medianBlur(gray, 5)
+        return cv2.medianBlur(gray, self.kernel_blur)
 
     def __detect_circles(self, blur):
         circles = cv2.HoughCircles(
             blur,
             cv2.HOUGH_GRADIENT,
             dp=1.2,
-            minDist=18,
+            minDist=self.hough_min_dist,
             param1=80,
             param2=self.hough_param2,
             minRadius=self.min_radius,
@@ -162,9 +167,9 @@ class Tamaulipas:
         marked = self.__extract_coords(height_crop, circle_list, binary)
         labels = self.__read_labels(image_path)
 
-        yolo_annotation = self.__convert_yolo_annotation(W, H, marked, labels)
-
-        if len(yolo_annotation) != 90:
+        if len(marked) != 90:
             raise Exception("Anotacoes faltando")
+
+        yolo_annotation = self.__convert_yolo_annotation(W, H, marked, labels)
 
         return yolo_annotation
