@@ -13,4 +13,5 @@ dependencies = [
     "pandas>=3.0.3",
     "seaborn>=0.13.2",
     "supervision>=0.28.0",
+    "ultralytics>=8.4.52",
 ]
