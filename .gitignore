@@ -43,6 +43,7 @@ htmlcov/
 # Training outputs and model artifacts
 runs/
 outputs/
+output/
 artifacts/
 checkpoints/
 *.pt
