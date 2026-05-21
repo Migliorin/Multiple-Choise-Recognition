@@ -150,8 +150,14 @@ class Tamaulipas:
             row += 1
 
         return yolo_annotations
-
+    
+    
     def __call__(self, image_path: str, *args, **kwds):
+
+        labels = self.__read_labels(image_path)
+
+        if(len(labels.keys()) != 90):
+            return
 
         img = self.__open_image(image_path)
         H, W, _ = img.shape
@@ -165,8 +171,7 @@ class Tamaulipas:
         binary = self.__binary_mask(blur)
 
         marked = self.__extract_coords(height_crop, circle_list, binary)
-        labels = self.__read_labels(image_path)
-
+        
         if len(marked) != 90:
             raise Exception("Anotacoes faltando")
 
