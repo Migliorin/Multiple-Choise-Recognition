@@ -24,26 +24,25 @@ def listar_txts(labels_dir):
     return txt_files
 
 
-def encontrar_imagem_correspondente(txt_file, labels_dir, images_dir):
+def encontrar_imagem_correspondente(txt_file, labels_dir):
     """
     Procura a imagem correspondente ao .txt usando a mesma estrutura relativa.
 
     Exemplo:
         labels_dir/School001/Grade12/File0005.txt
-        images_dir/School001/Grade12/File0005.jpg
+        labels_dir/School001/Grade12/File0005.jpg
     """
 
     labels_dir = Path(labels_dir)
-    images_dir = Path(images_dir)
 
     relative_path = txt_file.relative_to(labels_dir)
     relative_without_ext = relative_path.with_suffix("")
 
     for ext in EXTENSOES_IMAGEM:
-        image_path = images_dir / relative_without_ext.with_suffix(ext)
+        rotated_image_path = labels_dir / relative_without_ext.with_suffix(ext)
 
-        if image_path.exists():
-            return image_path
+        if rotated_image_path.exists():
+            return rotated_image_path
 
     return None
 
@@ -85,7 +84,7 @@ def criar_estrutura_yolo(dataset_dir):
         dir_.mkdir(parents=True, exist_ok=True)
 
 
-def copiar_par(txt_file, image_file, labels_dir, images_dir, dataset_dir, split):
+def copiar_par(txt_file, image_file, labels_dir, dataset_dir, split):
     dataset_dir = Path(dataset_dir)
 
     nome_base_txt = nome_flatten_arquivo(
@@ -98,7 +97,7 @@ def copiar_par(txt_file, image_file, labels_dir, images_dir, dataset_dir, split)
 
     nome_base_img = nome_flatten_arquivo(
         file_path=image_file,
-        base_dir=images_dir,
+        base_dir=labels_dir,
         nova_extensao=extensao_imagem
     )
 
@@ -137,12 +136,6 @@ def main():
     )
 
     parser.add_argument(
-        "--images-dir",
-        required=True,
-        help="Diretório contendo as imagens originais com a mesma estrutura do labels-dir."
-    )
-
-    parser.add_argument(
         "--dataset-dir",
         default="dataset",
         help="Diretório de saída no formato YOLO. Padrão: dataset"
@@ -172,14 +165,10 @@ def main():
     args = parser.parse_args()
 
     labels_dir = Path(args.labels_dir)
-    images_dir = Path(args.images_dir)
     dataset_dir = Path(args.dataset_dir)
 
     if not labels_dir.exists():
         raise FileNotFoundError(f"labels-dir não existe: {labels_dir}")
-
-    if not images_dir.exists():
-        raise FileNotFoundError(f"images-dir não existe: {images_dir}")
 
     if not 0 < args.valid_size < 1:
         raise ValueError("--valid-size precisa estar entre 0 e 1.")
@@ -198,8 +187,7 @@ def main():
     for txt_file in txt_files:
         image_file = encontrar_imagem_correspondente(
             txt_file=txt_file,
-            labels_dir=labels_dir,
-            images_dir=images_dir
+            labels_dir=labels_dir
         )
 
         if image_file is None:
@@ -225,7 +213,6 @@ def main():
             txt_file=txt_file,
             image_file=image_file,
             labels_dir=labels_dir,
-            images_dir=images_dir,
             dataset_dir=dataset_dir,
             split="train"
         )
@@ -235,7 +222,6 @@ def main():
             txt_file=txt_file,
             image_file=image_file,
             labels_dir=labels_dir,
-            images_dir=images_dir,
             dataset_dir=dataset_dir,
             split="valid"
         )

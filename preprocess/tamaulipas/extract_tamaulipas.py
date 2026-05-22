@@ -2,9 +2,10 @@ import os
 import argparse
 import threading
 import numpy as np
+import cv2
 from tqdm import tqdm
 
-from preprocess.tamaulipas.tamaulipas import Tamaulipas
+from tamaulipas import Tamaulipas
 
 
 def listar_imagens(input_dir):
@@ -34,6 +35,11 @@ def caminho_saida_txt(image_file, input_dir, output_dir):
     return output_file
 
 
+def caminho_saida_imagem(image_file, input_dir, output_dir):
+    relative_path = os.path.relpath(image_file, input_dir)
+    return os.path.join(output_dir, relative_path)
+
+
 def salvar_coordenadas(output_file, coordenadas):
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
@@ -45,6 +51,13 @@ def salvar_coordenadas(output_file, coordenadas):
             f.write(str(coordenadas))
 
 
+def salvar_imagem_rotacionada(output_file, imagem):
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    if not cv2.imwrite(output_file, imagem):
+        raise IOError(f"Falha ao salvar imagem rotacionada em: {output_file}")
+
+
 def extract_function(image_files, input_dir, output_dir, list_debug, pbar):
     tamaulipas = Tamaulipas()
 
@@ -54,21 +67,38 @@ def extract_function(image_files, input_dir, output_dir, list_debug, pbar):
             input_dir=input_dir,
             output_dir=output_dir
         )
+        output_image_file = caminho_saida_imagem(
+            image_file=image_file,
+            input_dir=input_dir,
+            output_dir=output_dir
+        )
 
         try:
-            # Se já existe o .txt, considera que a coordenada já foi extraída
-            if os.path.exists(output_file):
+            # Considera concluído apenas quando o .txt e a imagem rotacionada existem.
+            if os.path.exists(output_file) and os.path.exists(output_image_file):
                 continue
 
-            coordenadas = tamaulipas(image_file)
+            resultado = tamaulipas(image_file)
 
-            if coordenadas is None:
-                continue 
-            
+            if resultado is None:
+                continue
+
+            coordenadas = resultado
+            imagem_rotacionada = None
+
+            if isinstance(resultado, tuple) and len(resultado) == 2:
+                coordenadas, imagem_rotacionada = resultado
+
             salvar_coordenadas(
                 output_file=output_file,
                 coordenadas=coordenadas
             )
+
+            if imagem_rotacionada is not None:
+                salvar_imagem_rotacionada(
+                    output_file=output_image_file,
+                    imagem=imagem_rotacionada
+                )
 
         except Exception as error:
             list_debug.append((image_file, str(error)))

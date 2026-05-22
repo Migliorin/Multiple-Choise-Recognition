@@ -1,3 +1,4 @@
+import math
 import re
 
 import cv2
@@ -61,6 +62,51 @@ class Tamaulipas:
                 circle_list.append((x, y, r))
 
         return circle_list
+    
+    def __rotate_image(self,image, circle_list:list,target_angle=0):
+        circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]),reverse=True)[:10])
+        x_1, y_1, _ = circles_[circles_[:,1].argmin()]
+
+        circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]))[:10])
+        x_2, y_2, _ = circles_[circles_[:,1].argmin()]
+
+        dx = x_2 - x_1
+        dy = y_2 - y_1
+
+        h, w, _ = image.shape
+        
+        try:
+            current_angle = math.degrees(dy/dx)
+        except:
+            return image
+
+        rotation_angle = target_angle + current_angle
+
+        center = (w / 2, h / 2)
+
+        matrix = cv2.getRotationMatrix2D(center, rotation_angle, scale=1)
+        
+        cos = abs(matrix[0, 0])
+        sin = abs(matrix[0, 1])
+
+        new_w = int((h * sin) + (w * cos))
+        new_h = int((h * cos) + (w * sin))
+
+        matrix[0, 2] += (new_w / 2) - center[0]
+        matrix[1, 2] += (new_h / 2) - center[1]
+
+        output_size = (new_w, new_h)
+
+        rotated_image = cv2.warpAffine(
+            image,
+            matrix,
+            output_size,
+            flags=cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_CONSTANT,
+            borderValue=(0, 0, 0)
+        )
+
+        return rotated_image
 
     def __binary_mask(self, blur):
         return cv2.adaptiveThreshold(
@@ -164,8 +210,18 @@ class Tamaulipas:
 
         height_crop = int(H * self.height_crop)
 
-        img = img[height_crop:, ::, ::]
-        blur = self.__convert_image(img)
+        img_crop = img[height_crop:, ::, ::]
+        blur = self.__convert_image(img_crop)
+
+        circle_list = self.__detect_circles(blur)
+
+        rotated_img = self.__rotate_image(img,circle_list)
+
+        H, W, _ = rotated_img.shape
+
+        height_crop = int(H * self.height_crop)
+        img_crop = rotated_img[height_crop:, ::, ::]
+        blur = self.__convert_image(img_crop)
 
         circle_list = self.__detect_circles(blur)
         binary = self.__binary_mask(blur)
@@ -177,4 +233,4 @@ class Tamaulipas:
 
         yolo_annotation = self.__convert_yolo_annotation(W, H, marked, labels)
 
-        return yolo_annotation
+        return (yolo_annotation, rotated_img)
