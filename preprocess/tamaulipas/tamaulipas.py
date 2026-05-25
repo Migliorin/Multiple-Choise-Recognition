@@ -64,23 +64,27 @@ class Tamaulipas:
         return circle_list
     
     def __rotate_image(self,image, circle_list:list,target_angle=0):
-        circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]),reverse=True)[:10])
-        x_1, y_1, _ = circles_[circles_[:,1].argmin()]
+        circles_ = np.array(sorted(circle_list,key=lambda x: (x[1]))[:3])
+        #circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]),reverse=True)[:10])
+        x_1, y_1, _ = circles_[circles_[:,0].argmin()]
 
-        circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]))[:10])
-        x_2, y_2, _ = circles_[circles_[:,1].argmin()]
+        #circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]))[:10])
+        x_2, y_2, _ = circles_[circles_[:,0].argmax()]
 
         dx = x_2 - x_1
         dy = y_2 - y_1
 
-        h, w, _ = image.shape
+        h, w = image.shape[:2]
         
         try:
             current_angle = math.degrees(dy/dx)
         except:
             return image
 
-        rotation_angle = target_angle + current_angle
+        if(current_angle > 0):
+            rotation_angle = target_angle + current_angle
+        else:
+            rotation_angle = target_angle - current_angle
 
         center = (w / 2, h / 2)
 
@@ -219,7 +223,6 @@ class Tamaulipas:
 
         H, W, _ = rotated_img.shape
 
-        height_crop = int(H * self.height_crop)
         img_crop = rotated_img[height_crop:, ::, ::]
         blur = self.__convert_image(img_crop)
 
