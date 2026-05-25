@@ -65,10 +65,7 @@ class Tamaulipas:
     
     def __rotate_image(self,image, circle_list:list,target_angle=0):
         circles_ = np.array(sorted(circle_list,key=lambda x: (x[1]))[:3])
-        #circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]),reverse=True)[:10])
         x_1, y_1, _ = circles_[circles_[:,0].argmin()]
-
-        #circles_ = np.array(sorted(circle_list,key=lambda x: (x[0]))[:10])
         x_2, y_2, _ = circles_[circles_[:,0].argmax()]
 
         dx = x_2 - x_1
@@ -81,10 +78,7 @@ class Tamaulipas:
         except:
             return image
 
-        if(current_angle > 0):
-            rotation_angle = target_angle + current_angle
-        else:
-            rotation_angle = target_angle - current_angle
+        rotation_angle = target_angle + current_angle
 
         center = (w / 2, h / 2)
 
