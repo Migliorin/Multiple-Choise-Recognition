@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 
@@ -58,6 +60,50 @@ class Kaggle():
 
         return circle_list
     
+    def __rotate_image(self,image, circle_list:list,target_angle=0):
+        circles_ = np.array(sorted(circle_list,key=lambda x: (x[1]))[:3])
+        x_1, y_1, _ = circles_[circles_[:,0].argmin()]
+        x_2, y_2, _ = circles_[circles_[:,0].argmax()]
+
+        dx = x_2 - x_1
+        dy = y_2 - y_1
+
+        h, w = image.shape[:2]
+        
+        try:
+            current_angle = math.degrees(dy/dx)
+        except:
+            return image
+
+        rotation_angle = target_angle + current_angle
+
+        center = (w / 2, h / 2)
+
+        matrix = cv2.getRotationMatrix2D(center, rotation_angle, scale=1)
+        
+        cos = abs(matrix[0, 0])
+        sin = abs(matrix[0, 1])
+
+        new_w = int((h * sin) + (w * cos))
+        new_h = int((h * cos) + (w * sin))
+
+        matrix[0, 2] += (new_w / 2) - center[0]
+        matrix[1, 2] += (new_h / 2) - center[1]
+
+        output_size = (new_w, new_h)
+
+        rotated_image = cv2.warpAffine(
+            image,
+            matrix,
+            output_size,
+            flags=cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_CONSTANT,
+            borderValue=(0, 0, 0)
+        )
+
+        return rotated_image
+
+
     def __binary_mask(self, blur):
         return cv2.adaptiveThreshold(
             blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10
@@ -126,6 +172,14 @@ class Kaggle():
         blur = self.__convert_image(img)
 
         circle_list = self.__detect_circles(blur)
+
+        rotated_img = self.__rotate_image(img,circle_list)
+
+        H, W, _ = rotated_img.shape
+        
+        blur = self.__convert_image(rotated_img)
+
+        circle_list = self.__detect_circles(blur)
         binary = self.__binary_mask(blur)
 
         marked = self.__extract_coords(circle_list, binary)
@@ -133,4 +187,6 @@ class Kaggle():
         if len(marked) != 30:
             raise Exception("Anotacoes faltando")
 
-        return self.__convert_yolo_annotation(W, H, marked, labels)
+        yolo_annotations = self.__convert_yolo_annotation(W, H, marked, labels)
+
+        return yolo_annotations, rotated_img
